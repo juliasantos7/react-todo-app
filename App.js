@@ -1,15 +1,17 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, AsyncStorage } from 'react-native';
 import React, {useState} from 'react';
+
+let TODO_LIST_STORAGE_KEY = 'todoList';
 
 export default function App() {
   // TODO OBJECT AND TODO LIST
-  const makeTodo = (name, description) => {
+  const makeTodo = (name, description, imagePath = undefined, done = false) => {
     const [todo, setTodo] = useState({
       todoName: name,
       description: description,
-      imagePath: undefined,
-      done: False,
+      imagePath: imagePath,
+      done: done,
     });
     return todo, setTodo;
   }
@@ -83,14 +85,64 @@ export default function App() {
     updateDone(currTodo, setCurrTodo);
   }
 
-  // saving with persistence
+  // ============
+  // PERSISTENCE
+  // ============
+  
+  // Save
+  const saveTodoList = async () => {
+    try {
+      const jsonTodoList = JSON.stringify(todoList);
+      await AsyncStorage.setItem(TODO_LIST_STORAGE_KEY, jsonTodoList);
+    } catch (error) {
+      console.error('error with todolist save', error);
+    }
+  }
 
+  // Load
+  const loadTodoList = async () => {
+    try {
+      const loadOutput = AsyncStorage.getItem(TODO_LIST_STORAGE_KEY);
+      return loadOutput != null ? JSON.parse(loadOutput) : [];
+    } catch (error) {
+      console.error('error with todolist load', error);
+      return [];
+    }
+  }
+
+  const generateUseState = (givenTodoList) => {
+    // const [todo, setTodo]
+    //   todoName: name,
+    //   description: description,
+    //   imagePath: imagePath,
+    //   done: done,
+    // const [todoList, setTodoList] = useState([]);
+    // const [editTodos, setEditTodos] = useState([]);
+    // generate new use states for todolist
+    for (let i = 0; i < givenTodoList.length; i++) {
+      const [currTodo, currSetTodo] = makeTodo(givenTodoList[i].todoName, givenTodoList[i].description, givenTodoList[i].imagePath, givenTodoList[i].done);
+      todoList.push(newTodo);
+      editTodos.push(setNewTodo);
+    }
+  }
+
+  const startLoad = () => {
+    const loadedTodoList = loadTodoList();
+    // set editTodos and TodoList as empty
+    setTodoList([]);
+    setEditTodos([]);
+    // check if list is empty
+    if (loadTodoList.length != 0) {
+      // if non-empty populate lists with usestates for list
+      generateUseState(loadedTodoList);
+    }
+  }
 
 
   return (
     <View style={[styles.container, {flexDirection: 'column'},]}>
-      {/* <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" /> */}
+      {/* <Text>Open up App.js to start working on your app!</Text> */}
+      <StatusBar style="auto" />
       {/* title */}
       <Text>To-Do App</Text>
       {/* to do summary */}
