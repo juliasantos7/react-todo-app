@@ -88,7 +88,7 @@ export default function App() {
   // ============
   // PERSISTENCE
   // ============
-  
+
   // Save
   const saveTodoList = async () => {
     try {
@@ -111,16 +111,15 @@ export default function App() {
   }
 
   const generateUseState = (givenTodoList) => {
-    // const [todo, setTodo]
-    //   todoName: name,
-    //   description: description,
-    //   imagePath: imagePath,
-    //   done: done,
-    // const [todoList, setTodoList] = useState([]);
-    // const [editTodos, setEditTodos] = useState([]);
-    // generate new use states for todolist
+    // set editTodos and TodoList as empty for new values
+    setTodoList([]);
+    setEditTodos([]);
     for (let i = 0; i < givenTodoList.length; i++) {
-      const [currTodo, currSetTodo] = makeTodo(givenTodoList[i].todoName, givenTodoList[i].description, givenTodoList[i].imagePath, givenTodoList[i].done);
+      const [currTodo, currSetTodo] = makeTodo(
+        givenTodoList[i].todoName, 
+        givenTodoList[i].description, 
+        givenTodoList[i].imagePath, 
+        givenTodoList[i].done);
       todoList.push(newTodo);
       editTodos.push(setNewTodo);
     }
@@ -128,10 +127,6 @@ export default function App() {
 
   const startLoad = () => {
     const loadedTodoList = loadTodoList();
-    // set editTodos and TodoList as empty
-    setTodoList([]);
-    setEditTodos([]);
-    // check if list is empty
     if (loadTodoList.length != 0) {
       // if non-empty populate lists with usestates for list
       generateUseState(loadedTodoList);
