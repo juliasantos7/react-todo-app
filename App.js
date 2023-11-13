@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TouchableOpacity, TextInput, FlatList, Button, Image } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, TextInput, FlatList, Modal} from 'react-native';
 import React, {useState, useEffect} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -18,6 +18,8 @@ export default function App() {
   const [todoList, setTodoList] = useState([]);
   const [name, setName] = useState("");
   const [des, setDes] = useState("");
+  const [editVisible, setEditVisible] = useState(false);
+  const [editIndex, setEditIndex] = useState(-1);
 
   // =====================
   // EDITING TODO OBJECT
@@ -74,16 +76,16 @@ export default function App() {
   // update todo
   const handleUpdateTodo = (index, name, description) => {
     // get todo at index
-    const setCurrTodo = editTodos[index];
-
-    if (name != undefined) {
-      updateName(setCurrTodo, name);
+    if (index != -1) { 
+      if (name != undefined) {
+        updateName(index, name);
+      }
+      if (description != undefined) {
+        updateDescription(index, description);
+      }
+  
+      storeTodoList();
     }
-    if (description != undefined) {
-      updateDescription(setCurrTodo, description);
-    }
-
-    storeTodoList();
   };
 
   // delete todo
@@ -120,7 +122,7 @@ export default function App() {
   // Load
   const loadTodoList = async () => {
     try {
-      // AsyncStorage.clear();
+      AsyncStorage.clear();
       console.log('loading todos')
       const loadOutput = await AsyncStorage.getItem(TODO_LIST_STORAGE_KEY);
       console.log(loadOutput)
@@ -134,11 +136,11 @@ export default function App() {
 
   const startLoad = async () => {
     const loadedTodoList = await loadTodoList();
-    // if (loadedTodoList == null) {
-    //   setTodoList([])
-    // } else {
-    //   setTodoList(loadedTodoList)
-    // }
+    if (loadedTodoList == null) {
+      setTodoList([])
+    } else {
+      setTodoList(loadedTodoList)
+    }
   }
 
   useEffect(() => {
@@ -148,12 +150,18 @@ export default function App() {
   const renderItem = ({item, index}) => {
     return (<View style={styles.todoItem}>
       <TouchableOpacity
+        style={styles.checkbox}
         onPress={() => handleMarking(index)}>
-        <Text>{item.done ? '☒' : '☐'}</Text>
+        <Text>{item.done ? 'X':' '}</Text>
       </TouchableOpacity>
       <Text>{item.name}</Text>
       <Text>{item.description}</Text>
-      <TouchableOpacity>
+      <TouchableOpacity
+        onPress={(index) => {
+          setEditIndex(index)
+          setEditVisible(!editVisible)
+        }}
+      >
         <Text>Edit</Text>
       </TouchableOpacity>
       <TouchableOpacity
@@ -187,6 +195,38 @@ export default function App() {
         renderItem={renderItem}
         keyExtractor={(item, index) => index.toString()}
       />
+      {/* <Modal
+        animationType="slide"
+        transparent={true}
+        visible={editVisible}
+        onRequestClose={() => {
+          setEditIndex(-1)
+          setEditVisible(!editVisible);
+        }}>
+        <View>
+          <View>
+            <Text>Edit your todo</Text>
+            <TextInput
+              placeholder={todoList[editIndex].name}
+              value={name}
+              onChangeText={(text) => setName(text)}
+            />
+            <TextInput
+              placeholder={todoList[editIndex].description}
+              value={des}
+              onChangeText={(text) => setDes(text)}
+            />
+            <Pressable
+              onPress={() => handleUpdateTodo(editIndex, name, des)}>
+              <Text>Submit</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setEditVisible(!editVisible)}>
+            <Text>Exit</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal> */}
     </View>
   );
 }
@@ -205,9 +245,13 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 10,
+    marginLeft: 5,
+    marginRight: 5,
   },
-  todoIcon: {
-    width: 15,
-    height: 15,
-  }
+  checkbox: {
+    borderWidth: 2,
+    width: 20,
+    height: 20,
+    alignItems: 'center',
+  },
 });
