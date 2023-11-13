@@ -1,8 +1,9 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, AsyncStorage, TouchableOpacity, TextInput, FlatList, Button } from 'react-native';
-import React, {useState} from 'react';
+import { StyleSheet, Text, View, TouchableOpacity, TextInput, FlatList, Button, Image } from 'react-native';
+import React, {useState, useEffect} from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-let TODO_LIST_STORAGE_KEY = 'todoList';
+const TODO_LIST_STORAGE_KEY = 'todoList';
 
 export default function App() {
   // TODO OBJECT AND TODO LIST
@@ -67,6 +68,7 @@ export default function App() {
     // make new todo and add to array
     const newTodo = makeTodo(name, des);
     setTodoList([... todoList, newTodo]);
+    storeTodoList();
   };
 
   // update todo
@@ -80,6 +82,8 @@ export default function App() {
     if (description != undefined) {
       updateDescription(setCurrTodo, description);
     }
+
+    storeTodoList();
   };
 
   // delete todo
@@ -92,6 +96,7 @@ export default function App() {
   // Marking off
   const handleMarking = (index) => {
     updateDone(index);
+    storeTodoList();
   }
 
   // ============
@@ -99,9 +104,13 @@ export default function App() {
   // ============
 
   // Save
-  const saveTodoList = async () => {
+  const storeTodoList = async () => {
     try {
+      // clear old list
+      AsyncStorage.clear();
+      // store new list
       const jsonTodoList = JSON.stringify(todoList);
+      console.log(jsonTodoList)
       await AsyncStorage.setItem(TODO_LIST_STORAGE_KEY, jsonTodoList);
     } catch (error) {
       console.error('error with todolist save', error);
@@ -111,28 +120,39 @@ export default function App() {
   // Load
   const loadTodoList = async () => {
     try {
-      const loadOutput = AsyncStorage.getItem(TODO_LIST_STORAGE_KEY);
-      return loadOutput != null ? JSON.parse(loadOutput) : [];
+      // AsyncStorage.clear();
+      console.log('loading todos')
+      const loadOutput = await AsyncStorage.getItem(TODO_LIST_STORAGE_KEY);
+      console.log(loadOutput)
+      loadOutput != null ? JSON.parse(loadOutput) : null;
+      return loadOutput;
     } catch (error) {
       console.error('error with todolist load', error);
-      return [];
+      return null;
     }
   }
 
-  const startLoad = () => {
-    const loadedTodoList = loadTodoList();
-    setTodoList(loadedTodoList)
+  const startLoad = async () => {
+    const loadedTodoList = await loadTodoList();
+    // if (loadedTodoList == null) {
+    //   setTodoList([])
+    // } else {
+    //   setTodoList(loadedTodoList)
+    // }
   }
+
+  useEffect(() => {
+    startLoad();
+  }, []);
 
   const renderItem = ({item, index}) => {
     return (<View style={styles.todoItem}>
-      <Text>{item.name}</Text>
-      <Text>{item.description}</Text>
-      <Text>{item.done ? 'done' : 'unfinished'}</Text>
       <TouchableOpacity
         onPress={() => handleMarking(index)}>
-        <Text>Done</Text>
+        <Text>{item.done ? '☒' : '☐'}</Text>
       </TouchableOpacity>
+      <Text>{item.name}</Text>
+      <Text>{item.description}</Text>
       <TouchableOpacity>
         <Text>Edit</Text>
       </TouchableOpacity>
@@ -145,7 +165,7 @@ export default function App() {
 
 
   return (
-    <View style={[styles.container, {flexDirection: 'column'},]}>
+    <View style={styles.container}>
       <StatusBar style="auto" />
       <Text>To-Do App</Text>
       <TextInput
@@ -177,6 +197,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
+    flexDirection: 'column',
     marginTop: 40
   },
   todoItem: {
@@ -185,4 +206,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 10,
   },
+  todoIcon: {
+    width: 15,
+    height: 15,
+  }
 });
