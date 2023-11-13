@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, AsyncStorage } from 'react-native';
+import { StyleSheet, Text, View, AsyncStorage, TouchableOpacity, TextInput, FlatList, Button } from 'react-native';
 import React, {useState} from 'react';
 
 let TODO_LIST_STORAGE_KEY = 'todoList';
@@ -7,41 +7,49 @@ let TODO_LIST_STORAGE_KEY = 'todoList';
 export default function App() {
   // TODO OBJECT AND TODO LIST
   const makeTodo = (name, description, imagePath = undefined, done = false) => {
-    const [todo, setTodo] = useState({
-      todoName: name,
+    return ({
+      name: name,
       description: description,
       imagePath: imagePath,
       done: done,
     });
-    return todo, setTodo;
   }
   const [todoList, setTodoList] = useState([]);
-  const [editTodos, setEditTodos] = useState([]);
+  const [name, setName] = useState("");
+  const [des, setDes] = useState("");
 
   // =====================
   // EDITING TODO OBJECT
   // =====================
 
   // update name
-  const updateName = (setCurrTodo, newName) => {
-    setCurrTodo(previousState => {
-      return { ...previousState, todoName: newName }
-    });
+  const updateName = (index, newName) => {
+    const updatedTodos = todoList;
+    updatedTodos[index] = {
+      ... todoList[index],
+      name : newName
+    }
+    setTodoList(updatedTodos)
   }
 
   // update description
-  const updateDescription = (setCurrTodo, newDes) => {
-    setCurrTodo(previousState => {
-      return { ...previousState, description: newDes }
-    });
+  const updateDescription = (index, newDes) => {
+    const updatedTodos = todoList;
+    updatedTodos[index] = {
+      ... todoList[index],
+      description : newDes
+    }
+    setTodoList(updatedTodos)
   }
 
   // updateDone by setting done to the opposite of what it was
-  const updateDone = (currTodo, setCurrTodo) => {
-    const newDoneState = !currTodo.done;
-    setCurrTodo(previousState => {
-      return { ...previousState, done: newDoneState }
-    });
+  const updateDone = (index) => {
+    const updatedTodos = todoList;
+    updatedTodos[index] = {
+      ... todoList[index],
+      done : true
+    }
+    setTodoList(updatedTodos)
   }
 
   // updateImage
@@ -52,11 +60,13 @@ export default function App() {
   // ===================
 
   // add todo which is automatically set to not finished
-  const handleAddTodo = (name, description) => {
+  const handleAddTodo = () => {
+    if (name == null) {
+      return;
+    }
     // make new todo and add to array
-    const [newTodo, setNewTodo] = makeTodo(name, description);
-    todoList.push(newTodo);
-    editTodos.push(setNewTodo);
+    const newTodo = makeTodo(name, des);
+    setTodoList([... todoList, newTodo]);
   };
 
   // update todo
@@ -68,21 +78,20 @@ export default function App() {
       updateName(setCurrTodo, name);
     }
     if (description != undefined) {
-      updateName(setCurrTodo, name);
+      updateDescription(setCurrTodo, description);
     }
   };
 
   // delete todo
   const handleDeleteTodo = (index) => {
-    setTodoList(todoList.splice(index, index));
-    setEditTodos(editTodos.splice(index, index));
+    const updatedTodoList = [...todoList]
+    updatedTodoList.splice(index, 1)
+    setTodoList(updatedTodoList);
   };
 
   // Marking off
   const handleMarking = (index) => {
-    const currTodo = todoList[index];
-    const setCurrTodo = editTodos[index];
-    updateDone(currTodo, setCurrTodo);
+    updateDone(index);
   }
 
   // ============
@@ -110,39 +119,54 @@ export default function App() {
     }
   }
 
-  const generateUseState = (givenTodoList) => {
-    // set editTodos and TodoList as empty for new values
-    setTodoList([]);
-    setEditTodos([]);
-    for (let i = 0; i < givenTodoList.length; i++) {
-      const [currTodo, currSetTodo] = makeTodo(
-        givenTodoList[i].todoName, 
-        givenTodoList[i].description, 
-        givenTodoList[i].imagePath, 
-        givenTodoList[i].done);
-      todoList.push(newTodo);
-      editTodos.push(setNewTodo);
-    }
-  }
-
   const startLoad = () => {
     const loadedTodoList = loadTodoList();
-    if (loadTodoList.length != 0) {
-      // if non-empty populate lists with usestates for list
-      generateUseState(loadedTodoList);
-    }
+    setTodoList(loadedTodoList)
+  }
+
+  const renderItem = ({item, index}) => {
+    return (<View style={styles.todoItem}>
+      <Text>{item.name}</Text>
+      <Text>{item.description}</Text>
+      <Text>{item.done ? 'done' : 'unfinished'}</Text>
+      <TouchableOpacity
+        onPress={() => handleMarking(index)}>
+        <Text>Done</Text>
+      </TouchableOpacity>
+      <TouchableOpacity>
+        <Text>Edit</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        onPress={() => handleDeleteTodo(index)}>
+        <Text>Delete</Text>
+      </TouchableOpacity>
+    </View>)
   }
 
 
   return (
     <View style={[styles.container, {flexDirection: 'column'},]}>
-      {/* <Text>Open up App.js to start working on your app!</Text> */}
       <StatusBar style="auto" />
-      {/* title */}
       <Text>To-Do App</Text>
-      {/* to do summary */}
-      {/* to do section */}
-      {/* dropdown list of finished/hidden todos */}
+      <TextInput
+        placeholder="Enter Todo"
+        value={name}
+        onChangeText={(text) => setName(text)}
+      />
+      <TextInput
+        placeholder="Enter Description"
+        value={des}
+        onChangeText={(text) => setDes(text)}
+      />
+      <TouchableOpacity
+        onPress={handleAddTodo}>
+        <Text>Add todo</Text>
+      </TouchableOpacity>
+      <FlatList
+        data={todoList}
+        renderItem={renderItem}
+        keyExtractor={(item, index) => index.toString()}
+      />
     </View>
   );
 }
@@ -153,5 +177,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 40
+  },
+  todoItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
   },
 });
